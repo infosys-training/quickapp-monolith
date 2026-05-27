@@ -11,7 +11,7 @@ namespace QuickApp.Server.Controllers
     {
         private readonly IOrderServiceClient _orderServiceClient;
 
-        public OrderController(ILogger<BaseApiController> logger, IMapper mapper,
+        public OrderController(ILogger<OrderController> logger, IMapper mapper,
             IOrderServiceClient orderServiceClient)
             : base(logger, mapper)
         {
