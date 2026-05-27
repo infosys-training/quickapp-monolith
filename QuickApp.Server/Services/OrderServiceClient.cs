@@ -51,7 +51,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get orders from Order service");
-                return new ServiceResult<IEnumerable<OrderVM>>(null, null, ex.Message);
+                return new ServiceResult<IEnumerable<OrderVM>>(null, null, "Order service is temporarily unavailable");
             }
         }
 
@@ -78,7 +78,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get order {OrderId} from Order service", id);
-                return new ServiceResult<OrderVM>(null, null, ex.Message);
+                return new ServiceResult<OrderVM>(null, null, "Order service is temporarily unavailable");
             }
         }
 
@@ -102,7 +102,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get orders for customer {CustomerId} from Order service", customerId);
-                return new ServiceResult<IEnumerable<OrderVM>>(null, null, ex.Message);
+                return new ServiceResult<IEnumerable<OrderVM>>(null, null, "Order service is temporarily unavailable");
             }
         }
 
@@ -126,7 +126,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create order in Order service");
-                return new ServiceResult<OrderVM>(null, null, ex.Message);
+                return new ServiceResult<OrderVM>(null, null, "Order service is temporarily unavailable");
             }
         }
 
@@ -153,7 +153,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to update order {OrderId} in Order service", id);
-                return new ServiceResult<OrderVM>(null, null, ex.Message);
+                return new ServiceResult<OrderVM>(null, null, "Order service is temporarily unavailable");
             }
         }
 
@@ -179,7 +179,7 @@ namespace QuickApp.Server.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to delete order {OrderId} from Order service", id);
-                return new ServiceResult<bool>(false, null, ex.Message);
+                return new ServiceResult<bool>(false, null, "Order service is temporarily unavailable");
             }
         }
     }
