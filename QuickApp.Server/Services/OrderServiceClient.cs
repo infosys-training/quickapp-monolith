@@ -12,10 +12,10 @@ namespace QuickApp.Server.Services
 
     public interface IOrderServiceClient
     {
-        Task<IEnumerable<OrderVM>> GetAllOrdersAsync();
-        Task<OrderVM?> GetOrderByIdAsync(int id);
-        Task<IEnumerable<OrderVM>> GetOrdersByCustomerIdAsync(int customerId);
-        Task<OrderVM?> CreateOrderAsync(CreateOrderVM dto);
+        Task<ServiceResult<IEnumerable<OrderVM>>> GetAllOrdersAsync();
+        Task<ServiceResult<OrderVM>> GetOrderByIdAsync(int id);
+        Task<ServiceResult<IEnumerable<OrderVM>>> GetOrdersByCustomerIdAsync(int customerId);
+        Task<ServiceResult<OrderVM>> CreateOrderAsync(CreateOrderVM dto);
         Task<ServiceResult<OrderVM>> UpdateOrderAsync(int id, UpdateOrderVM dto);
         Task<ServiceResult<bool>> DeleteOrderAsync(int id);
     }
@@ -31,63 +31,102 @@ namespace QuickApp.Server.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<OrderVM>> GetAllOrdersAsync()
+        public async Task<ServiceResult<IEnumerable<OrderVM>>> GetAllOrdersAsync()
         {
             try
             {
-                var orders = await _httpClient.GetFromJsonAsync<IEnumerable<OrderVM>>("api/order");
-                return orders ?? [];
+                var response = await _httpClient.GetAsync("api/order");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for GetAll: {Body}",
+                        response.StatusCode, body);
+                    return new ServiceResult<IEnumerable<OrderVM>>(null, response.StatusCode, body);
+                }
+
+                var orders = await response.Content.ReadFromJsonAsync<IEnumerable<OrderVM>>();
+                return new ServiceResult<IEnumerable<OrderVM>>(orders ?? [], response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get orders from Order service");
-                return [];
+                return new ServiceResult<IEnumerable<OrderVM>>(null, null, ex.Message);
             }
         }
 
-        public async Task<OrderVM?> GetOrderByIdAsync(int id)
+        public async Task<ServiceResult<OrderVM>> GetOrderByIdAsync(int id)
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<OrderVM>($"api/order/{id}");
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                return null;
+                var response = await _httpClient.GetAsync($"api/order/{id}");
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return new ServiceResult<OrderVM>(null, HttpStatusCode.NotFound, null);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for GetById {OrderId}: {Body}",
+                        response.StatusCode, id, body);
+                    return new ServiceResult<OrderVM>(null, response.StatusCode, body);
+                }
+
+                var order = await response.Content.ReadFromJsonAsync<OrderVM>();
+                return new ServiceResult<OrderVM>(order, response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get order {OrderId} from Order service", id);
-                return null;
+                return new ServiceResult<OrderVM>(null, null, ex.Message);
             }
         }
 
-        public async Task<IEnumerable<OrderVM>> GetOrdersByCustomerIdAsync(int customerId)
+        public async Task<ServiceResult<IEnumerable<OrderVM>>> GetOrdersByCustomerIdAsync(int customerId)
         {
             try
             {
-                var orders = await _httpClient.GetFromJsonAsync<IEnumerable<OrderVM>>($"api/order/customer/{customerId}");
-                return orders ?? [];
+                var response = await _httpClient.GetAsync($"api/order/customer/{customerId}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for customer {CustomerId}: {Body}",
+                        response.StatusCode, customerId, body);
+                    return new ServiceResult<IEnumerable<OrderVM>>(null, response.StatusCode, body);
+                }
+
+                var orders = await response.Content.ReadFromJsonAsync<IEnumerable<OrderVM>>();
+                return new ServiceResult<IEnumerable<OrderVM>>(orders ?? [], response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get orders for customer {CustomerId} from Order service", customerId);
-                return [];
+                return new ServiceResult<IEnumerable<OrderVM>>(null, null, ex.Message);
             }
         }
 
-        public async Task<OrderVM?> CreateOrderAsync(CreateOrderVM dto)
+        public async Task<ServiceResult<OrderVM>> CreateOrderAsync(CreateOrderVM dto)
         {
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("api/order", dto);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<OrderVM>();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for Create: {Body}",
+                        response.StatusCode, body);
+                    return new ServiceResult<OrderVM>(null, response.StatusCode, body);
+                }
+
+                var order = await response.Content.ReadFromJsonAsync<OrderVM>();
+                return new ServiceResult<OrderVM>(order, response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create order in Order service");
-                return null;
+                return new ServiceResult<OrderVM>(null, null, ex.Message);
             }
         }
 

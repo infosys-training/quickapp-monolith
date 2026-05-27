@@ -20,29 +20,45 @@ namespace QuickApp.Server.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<OrderVM>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
         public async Task<IActionResult> GetAll()
         {
-            var orders = await _orderServiceClient.GetAllOrdersAsync();
-            return Ok(orders);
+            var result = await _orderServiceClient.GetAllOrdersAsync();
+
+            if (result.IsSuccess)
+                return Ok(result.Data);
+
+            return StatusCode((int?)result.StatusCode ?? StatusCodes.Status502BadGateway, result.Error);
         }
 
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(OrderVM), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
         public async Task<IActionResult> GetById(int id)
         {
-            var order = await _orderServiceClient.GetOrderByIdAsync(id);
-            if (order == null)
+            var result = await _orderServiceClient.GetOrderByIdAsync(id);
+
+            if (result.IsSuccess)
+                return Ok(result.Data);
+
+            if (result.IsNotFound)
                 return NotFound();
-            return Ok(order);
+
+            return StatusCode((int?)result.StatusCode ?? StatusCodes.Status502BadGateway, result.Error);
         }
 
         [HttpGet("customer/{customerId}")]
         [ProducesResponseType(typeof(IEnumerable<OrderVM>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
         public async Task<IActionResult> GetByCustomerId(int customerId)
         {
-            var orders = await _orderServiceClient.GetOrdersByCustomerIdAsync(customerId);
-            return Ok(orders);
+            var result = await _orderServiceClient.GetOrdersByCustomerIdAsync(customerId);
+
+            if (result.IsSuccess)
+                return Ok(result.Data);
+
+            return StatusCode((int?)result.StatusCode ?? StatusCodes.Status502BadGateway, result.Error);
         }
 
         [HttpPost]
@@ -51,10 +67,13 @@ namespace QuickApp.Server.Controllers
         [ProducesResponseType(StatusCodes.Status502BadGateway)]
         public async Task<IActionResult> Create([FromBody] CreateOrderVM dto)
         {
-            var order = await _orderServiceClient.CreateOrderAsync(dto);
-            if (order == null)
-                return StatusCode(StatusCodes.Status502BadGateway, "Failed to create order in Order service");
-            return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+            var result = await _orderServiceClient.CreateOrderAsync(dto);
+
+            if (result.IsSuccess && result.Data != null)
+                return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+
+            return StatusCode((int?)result.StatusCode ?? StatusCodes.Status502BadGateway,
+                result.Error ?? "Failed to create order in Order service");
         }
 
         [HttpPut("{id}")]
