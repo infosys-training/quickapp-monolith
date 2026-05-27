@@ -18,7 +18,10 @@ namespace QuickApp.Core.Infrastructure
     {
         public async Task SeedAsync()
         {
-            await dbContext.Database.MigrateAsync();
+            if (dbContext.Database.IsSqlite())
+                await dbContext.Database.EnsureCreatedAsync();
+            else
+                await dbContext.Database.MigrateAsync();
             await SeedDefaultUsersAsync();
             await SeedDemoDataAsync();
         }

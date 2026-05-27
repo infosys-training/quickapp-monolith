@@ -33,10 +33,14 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
                 throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 var migrationsAssembly = typeof(Program).GetTypeInfo().Assembly.GetName().Name;
+var useSqlite = string.Equals(builder.Configuration["UseDatabase"], "Sqlite", StringComparison.OrdinalIgnoreCase);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(connectionString, b => b.MigrationsAssembly(migrationsAssembly));
+    if (useSqlite)
+        options.UseSqlite(connectionString);
+    else
+        options.UseSqlServer(connectionString, b => b.MigrationsAssembly(migrationsAssembly));
     options.UseOpenIddict();
 });
 
@@ -195,6 +199,14 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
+
+// Order Microservice HTTP Client
+var orderServiceBaseUrl = builder.Configuration["OrderService:BaseUrl"] ?? "http://localhost:5003";
+builder.Services.AddHttpClient<IOrderServiceClient, OrderServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(orderServiceBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 // Other Services
 builder.Services.AddScoped<IEmailSender, EmailSender>();
