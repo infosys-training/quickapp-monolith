@@ -1,16 +1,19 @@
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuickApp.Server.Services;
 using QuickApp.Server.ViewModels.Shop;
 
 namespace QuickApp.Server.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class OrderController : ControllerBase
+    [Authorize]
+    public class OrderController : BaseApiController
     {
         private readonly IOrderServiceClient _orderServiceClient;
 
-        public OrderController(IOrderServiceClient orderServiceClient)
+        public OrderController(ILogger<BaseApiController> logger, IMapper mapper,
+            IOrderServiceClient orderServiceClient)
+            : base(logger, mapper)
         {
             _orderServiceClient = orderServiceClient;
         }
