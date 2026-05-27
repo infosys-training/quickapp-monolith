@@ -72,6 +72,9 @@ namespace QuickApp.Server.Controllers
             if (result.IsSuccess && result.Data != null)
                 return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
 
+            if (result.IsSuccess)
+                return StatusCode(StatusCodes.Status502BadGateway, "Order service returned success but no order data");
+
             return StatusCode((int?)result.StatusCode ?? StatusCodes.Status502BadGateway,
                 result.Error ?? "Failed to create order in Order service");
         }

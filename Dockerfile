@@ -6,6 +6,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["QuickApp.Server/QuickApp.Server.csproj", "QuickApp.Server/"]
 COPY ["QuickApp.Core/QuickApp.Core.csproj", "QuickApp.Core/"]
+COPY ["quickapp.client/quickapp.client.esproj", "quickapp.client/"]
 RUN dotnet restore "QuickApp.Server/QuickApp.Server.csproj"
 COPY QuickApp.Server/ QuickApp.Server/
 COPY QuickApp.Core/ QuickApp.Core/
