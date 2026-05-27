@@ -1,0 +1,55 @@
+@model MobileShopBilling.Application.DTOs.CreateTenantDto
+@{ ViewData["Title"] = "Create New Shop"; }
+
+<h4 class="mb-4"><i class="bi bi-plus-circle me-2"></i>Create New Shop</h4>
+
+<div class="card" style="max-width:700px;">
+    <div class="card-body">
+        <form asp-action="CreateShop" method="post">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <h6 class="text-muted mb-3">Shop Details</h6>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Shop Name *</label>
+                    <input asp-for="ShopName" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Owner Name *</label>
+                    <input asp-for="OwnerName" class="form-control" required />
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Email *</label>
+                    <input asp-for="Email" type="email" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone *</label>
+                    <input asp-for="Phone" class="form-control" required />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">GST Number</label>
+                <input asp-for="GstNumber" class="form-control" />
+            </div>
+
+            <hr/>
+            <h6 class="text-muted mb-3">Admin Account</h6>
+            <div class="mb-3">
+                <label class="form-label">Admin Password *</label>
+                <input asp-for="AdminPassword" type="password" class="form-control" required />
+                <small class="text-muted">Min 6 chars, 1 uppercase, 1 digit</small>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Create Shop</button>
+                <a href="/SuperAdmin/Shops" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

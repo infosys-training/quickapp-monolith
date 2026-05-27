@@ -1,0 +1,62 @@
+@model MobileShopBilling.Application.DTOs.UpdateProductDto
+@{ ViewData["Title"] = "Edit Product"; }
+
+<h4 class="mb-4"><i class="bi bi-pencil me-2"></i>Edit Product</h4>
+
+<div class="card" style="max-width:800px;">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input asp-for="Id" type="hidden" />
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Product Name *</label>
+                    <input asp-for="Name" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Brand</label>
+                    <input asp-for="Brand" class="form-control" />
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">IMEI</label>
+                    <input asp-for="IMEI" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Barcode</label>
+                    <input asp-for="Barcode" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Category</label>
+                    <input asp-for="Category" class="form-control" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Purchase Price *</label>
+                    <input asp-for="PurchasePrice" type="number" step="0.01" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Selling Price *</label>
+                    <input asp-for="SellingPrice" type="number" step="0.01" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Stock Qty *</label>
+                    <input asp-for="StockQuantity" type="number" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Low Stock Threshold</label>
+                    <input asp-for="LowStockThreshold" type="number" class="form-control" />
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update</button>
+                <a href="/Products" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

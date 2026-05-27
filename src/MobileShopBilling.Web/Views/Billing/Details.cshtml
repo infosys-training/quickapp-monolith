@@ -1,0 +1,81 @@
+@model MobileShopBilling.Application.DTOs.InvoiceDto
+@{ ViewData["Title"] = "Invoice Details"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="bi bi-receipt me-2"></i>Invoice: @Model.InvoiceNumber</h4>
+    <div>
+        <a href="/Billing/DownloadPdf/@Model.Id" class="btn btn-success"><i class="bi bi-file-pdf me-1"></i>Download PDF</a>
+        <a href="/Billing" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Invoice #:</strong> @Model.InvoiceNumber</p>
+                        <p><strong>Date:</strong> @Model.InvoiceDate.ToString("dd-MMM-yyyy HH:mm")</p>
+                        <p><strong>Status:</strong>
+                            @if (Model.Status == MobileShopBilling.Domain.Enums.InvoiceStatus.Completed)
+                            { <span class="badge bg-success">Completed</span> }
+                            else if (Model.Status == MobileShopBilling.Domain.Enums.InvoiceStatus.Cancelled)
+                            { <span class="badge bg-danger">Cancelled</span> }
+                            else { <span class="badge bg-warning">Draft</span> }
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Customer:</strong> @(Model.CustomerName ?? "Walk-in")</p>
+                        <p><strong>Payment:</strong> @Model.PaymentMode</p>
+                        @if (!string.IsNullOrEmpty(Model.TransactionReference))
+                        { <p><strong>Ref:</strong> @Model.TransactionReference</p> }
+                    </div>
+                </div>
+
+                <table class="table">
+                    <thead class="table-light">
+                        <tr><th>#</th><th>Product</th><th>Qty</th><th>Price</th><th>Disc</th><th>Tax</th><th class="text-end">Total</th></tr>
+                    </thead>
+                    <tbody>
+                        @{ var idx = 1; }
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@idx</td>
+                                <td>@item.ProductName</td>
+                                <td>@item.Quantity</td>
+                                <td>@item.UnitPrice.ToString("N2")</td>
+                                <td>@item.DiscountPercent%</td>
+                                <td>@item.TaxPercent%</td>
+                                <td class="text-end">@item.TotalPrice.ToString("N2")</td>
+                            </tr>
+                            idx++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white"><h6 class="mb-0">Summary</h6></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span><span>@Model.SubTotal.ToString("N2")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Discount:</span><span>-@Model.DiscountAmount.ToString("N2")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tax (GST):</span><span>+@Model.TaxAmount.ToString("N2")</span>
+                </div>
+                <hr/>
+                <div class="d-flex justify-content-between">
+                    <strong style="font-size:1.2rem;">Total:</strong>
+                    <strong style="font-size:1.2rem;">@Model.TotalAmount.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

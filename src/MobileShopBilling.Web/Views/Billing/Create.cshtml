@@ -1,0 +1,220 @@
+@{
+    ViewData["Title"] = "Create Invoice";
+    var products = ViewBag.Products as IEnumerable<MobileShopBilling.Application.DTOs.ProductDto>;
+    var customers = ViewBag.Customers as IEnumerable<MobileShopBilling.Application.DTOs.CustomerDto>;
+    var defaultTax = ViewBag.DefaultTax as MobileShopBilling.Application.DTOs.TaxConfigurationDto;
+}
+
+<h4 class="mb-4"><i class="bi bi-receipt me-2"></i>Create Invoice</h4>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0">Invoice Items</h6></div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-5">
+                        <select id="productSelect" class="form-select">
+                            <option value="">Select Product...</option>
+                            @if (products != null)
+                            {
+                                @foreach (var p in products)
+                                {
+                                    <option value="@p.Id" data-name="@p.Name" data-price="@p.SellingPrice" data-stock="@p.StockQuantity">
+                                        @p.Name (@p.Brand) - Stock: @p.StockQuantity
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" id="itemQty" class="form-control" placeholder="Qty" value="1" min="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" id="itemDiscount" class="form-control" placeholder="Disc%" value="0" step="0.1" />
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" id="itemTax" class="form-control" placeholder="Tax%"
+                               value="@(defaultTax?.Rate ?? 18)" step="0.1" />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-primary w-100" onclick="addItem()">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <table class="table table-sm" id="itemsTable">
+                    <thead>
+                        <tr><th>Product</th><th>Qty</th><th>Price</th><th>Disc%</th><th>Tax%</th><th>Total</th><th></th></tr>
+                    </thead>
+                    <tbody id="itemsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0">Customer</h6></div>
+            <div class="card-body">
+                <select id="customerSelect" class="form-select">
+                    <option value="">Walk-in Customer</option>
+                    @if (customers != null)
+                    {
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.Id">@c.Name - @c.Phone</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0">Summary</h6></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span><span id="subtotal">0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Discount:</span><span id="totalDiscount">-0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tax (GST):</span><span id="totalTax">+0.00</span>
+                </div>
+                <hr/>
+                <div class="d-flex justify-content-between">
+                    <strong>Total:</strong><strong id="grandTotal">0.00</strong>
+                </div>
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header bg-white"><h6 class="mb-0">Payment</h6></div>
+            <div class="card-body">
+                <select id="paymentMode" class="form-select mb-2">
+                    <option value="0">Cash</option>
+                    <option value="1">Card</option>
+                    <option value="2">UPI</option>
+                </select>
+                <input type="text" id="txnRef" class="form-control" placeholder="Transaction Reference (optional)" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <textarea id="notes" class="form-control" rows="2" placeholder="Notes (optional)"></textarea>
+        </div>
+        <button type="button" class="btn btn-success w-100 btn-lg" onclick="submitInvoice()">
+            <i class="bi bi-check-circle me-1"></i> Generate Invoice
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let items = [];
+
+    function addItem() {
+        const sel = document.getElementById('productSelect');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt.value) return alert('Select a product');
+
+        const qty = parseInt(document.getElementById('itemQty').value) || 1;
+        const stock = parseInt(opt.dataset.stock);
+        if (qty > stock) return alert('Insufficient stock. Available: ' + stock);
+
+        const price = parseFloat(opt.dataset.price);
+        const disc = parseFloat(document.getElementById('itemDiscount').value) || 0;
+        const tax = parseFloat(document.getElementById('itemTax').value) || 0;
+
+        items.push({
+            productId: opt.value,
+            productName: opt.dataset.name,
+            quantity: qty,
+            unitPrice: price,
+            discountPercent: disc,
+            taxPercent: tax
+        });
+
+        renderItems();
+        sel.selectedIndex = 0;
+        document.getElementById('itemQty').value = 1;
+        document.getElementById('itemDiscount').value = 0;
+    }
+
+    function removeItem(idx) {
+        items.splice(idx, 1);
+        renderItems();
+    }
+
+    function renderItems() {
+        const tbody = document.getElementById('itemsBody');
+        let html = '';
+        let sub = 0, disc = 0, tax = 0;
+
+        items.forEach((item, i) => {
+            const lineTotal = item.unitPrice * item.quantity;
+            const discAmt = lineTotal * (item.discountPercent / 100);
+            const taxable = lineTotal - discAmt;
+            const taxAmt = taxable * (item.taxPercent / 100);
+            const total = taxable + taxAmt;
+
+            sub += lineTotal;
+            disc += discAmt;
+            tax += taxAmt;
+
+            html += `<tr>
+                <td>${item.productName}</td>
+                <td>${item.quantity}</td>
+                <td>${item.unitPrice.toFixed(2)}</td>
+                <td>${item.discountPercent}%</td>
+                <td>${item.taxPercent}%</td>
+                <td>${total.toFixed(2)}</td>
+                <td><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${i})"><i class="bi bi-trash"></i></button></td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+        document.getElementById('subtotal').textContent = sub.toFixed(2);
+        document.getElementById('totalDiscount').textContent = '-' + disc.toFixed(2);
+        document.getElementById('totalTax').textContent = '+' + tax.toFixed(2);
+        document.getElementById('grandTotal').textContent = (sub - disc + tax).toFixed(2);
+    }
+
+    function submitInvoice() {
+        if (items.length === 0) return alert('Add at least one item');
+
+        const data = {
+            customerId: document.getElementById('customerSelect').value || null,
+            notes: document.getElementById('notes').value || null,
+            paymentMode: parseInt(document.getElementById('paymentMode').value),
+            transactionReference: document.getElementById('txnRef').value || null,
+            items: items.map(i => ({
+                productId: i.productId,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                discountPercent: i.discountPercent,
+                taxPercent: i.taxPercent
+            }))
+        };
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            || document.querySelector('meta[name="__RequestVerificationToken"]')?.content;
+
+        fetch('/Billing/Create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token || ''
+            },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                alert('Invoice ' + result.invoiceNumber + ' created!');
+                window.location.href = '/Billing/Details/' + result.id;
+            } else {
+                alert('Error: ' + result.message);
+            }
+        })
+        .catch(err => alert('Error: ' + err));
+    }
+</script>
+}
