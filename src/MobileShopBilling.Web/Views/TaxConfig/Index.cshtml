@@ -1,0 +1,39 @@
+@model IEnumerable<MobileShopBilling.Application.DTOs.TaxConfigurationDto>
+@{ ViewData["Title"] = "Tax / GST Configuration"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="bi bi-percent me-2"></i>Tax / GST Configuration</h4>
+    <a href="/TaxConfig/Create" class="btn btn-primary"><i class="bi bi-plus"></i> Add Tax</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Tax Name</th><th>Rate (%)</th><th>Default</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td><strong>@t.TaxName</strong></td>
+                        <td>@t.Rate%</td>
+                        <td>@(t.IsDefault ? "Yes" : "-")</td>
+                        <td>
+                            @if (t.IsActive) { <span class="badge bg-success">Active</span> }
+                            else { <span class="badge bg-secondary">Inactive</span> }
+                        </td>
+                        <td>
+                            <a href="/TaxConfig/Edit/@t.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
