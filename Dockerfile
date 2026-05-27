@@ -10,6 +10,7 @@ COPY ["quickapp.client/quickapp.client.esproj", "quickapp.client/"]
 RUN dotnet restore "QuickApp.Server/QuickApp.Server.csproj"
 COPY QuickApp.Server/ QuickApp.Server/
 COPY QuickApp.Core/ QuickApp.Core/
+COPY quickapp.client/ quickapp.client/
 WORKDIR "/src/QuickApp.Server"
 RUN dotnet build -c Release -o /app/build
 
