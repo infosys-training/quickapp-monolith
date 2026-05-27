@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MobileShopBilling.Application/MobileShopBilling.Application.csproj" />
+    <Project Path="src/MobileShopBilling.Domain/MobileShopBilling.Domain.csproj" />
+    <Project Path="src/MobileShopBilling.Infrastructure/MobileShopBilling.Infrastructure.csproj" />
+    <Project Path="src/MobileShopBilling.Web/MobileShopBilling.Web.csproj" />
+  </Folder>
+</Solution>
