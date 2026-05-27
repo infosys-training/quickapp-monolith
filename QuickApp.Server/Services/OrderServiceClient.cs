@@ -1,16 +1,23 @@
+using System.Net;
 using System.Net.Http.Json;
 using QuickApp.Server.ViewModels.Shop;
 
 namespace QuickApp.Server.Services
 {
+    public record ServiceResult<T>(T? Data, HttpStatusCode? StatusCode, string? Error)
+    {
+        public bool IsSuccess => StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.MultipleChoices;
+        public bool IsNotFound => StatusCode == HttpStatusCode.NotFound;
+    }
+
     public interface IOrderServiceClient
     {
         Task<IEnumerable<OrderVM>> GetAllOrdersAsync();
         Task<OrderVM?> GetOrderByIdAsync(int id);
         Task<IEnumerable<OrderVM>> GetOrdersByCustomerIdAsync(int customerId);
         Task<OrderVM?> CreateOrderAsync(CreateOrderVM dto);
-        Task<OrderVM?> UpdateOrderAsync(int id, object dto);
-        Task<bool> DeleteOrderAsync(int id);
+        Task<ServiceResult<OrderVM>> UpdateOrderAsync(int id, UpdateOrderVM dto);
+        Task<ServiceResult<bool>> DeleteOrderAsync(int id);
     }
 
     public class OrderServiceClient : IOrderServiceClient
@@ -44,7 +51,7 @@ namespace QuickApp.Server.Services
             {
                 return await _httpClient.GetFromJsonAsync<OrderVM>($"api/order/{id}");
             }
-            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
             }
@@ -84,32 +91,56 @@ namespace QuickApp.Server.Services
             }
         }
 
-        public async Task<OrderVM?> UpdateOrderAsync(int id, object dto)
+        public async Task<ServiceResult<OrderVM>> UpdateOrderAsync(int id, UpdateOrderVM dto)
         {
             try
             {
                 var response = await _httpClient.PutAsJsonAsync($"api/order/{id}", dto);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<OrderVM>();
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return new ServiceResult<OrderVM>(null, HttpStatusCode.NotFound, null);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for update of order {OrderId}: {Body}",
+                        response.StatusCode, id, body);
+                    return new ServiceResult<OrderVM>(null, response.StatusCode, body);
+                }
+
+                var order = await response.Content.ReadFromJsonAsync<OrderVM>();
+                return new ServiceResult<OrderVM>(order, response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to update order {OrderId} in Order service", id);
-                return null;
+                return new ServiceResult<OrderVM>(null, null, ex.Message);
             }
         }
 
-        public async Task<bool> DeleteOrderAsync(int id)
+        public async Task<ServiceResult<bool>> DeleteOrderAsync(int id)
         {
             try
             {
                 var response = await _httpClient.DeleteAsync($"api/order/{id}");
-                return response.IsSuccessStatusCode;
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return new ServiceResult<bool>(false, HttpStatusCode.NotFound, null);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Order service returned {StatusCode} for delete of order {OrderId}: {Body}",
+                        response.StatusCode, id, body);
+                    return new ServiceResult<bool>(false, response.StatusCode, body);
+                }
+
+                return new ServiceResult<bool>(true, response.StatusCode, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to delete order {OrderId} from Order service", id);
-                return false;
+                return new ServiceResult<bool>(false, null, ex.Message);
             }
         }
     }
