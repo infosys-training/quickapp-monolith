@@ -16,6 +16,7 @@ using QuickApp.Core.Models.Account;
 using QuickApp.Core.Services;
 using QuickApp.Core.Services.Account;
 using QuickApp.Core.Services.Shop;
+using QuickApp.Core.Services.Shop.HttpClients;
 using QuickApp.Server.Authorization;
 using QuickApp.Server.Authorization.Requirements;
 using QuickApp.Server.Configuration;
@@ -36,7 +37,15 @@ var migrationsAssembly = typeof(Program).GetTypeInfo().Assembly.GetName().Name;
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(connectionString, b => b.MigrationsAssembly(migrationsAssembly));
+    if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
+        && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString, b => b.MigrationsAssembly(migrationsAssembly));
+    }
     options.UseOpenIddict();
 });
 
@@ -194,6 +203,12 @@ builder.Services.AddScoped<IUserAccountService, UserAccountService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+var orderServiceBaseUrl = builder.Configuration["OrderService:BaseUrl"] ?? "http://localhost:5003";
+builder.Services.AddHttpClient<IOrderServiceClient, OrderServiceHttpClient>(client =>
+{
+    client.BaseAddress = new Uri(orderServiceBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 
 // Other Services
