@@ -16,6 +16,7 @@ using QuickApp.Core.Models.Account;
 using QuickApp.Core.Services;
 using QuickApp.Core.Services.Account;
 using QuickApp.Core.Services.Shop;
+using QuickApp.Core.Services.Shop.HttpClients;
 using QuickApp.Server.Authorization;
 using QuickApp.Server.Authorization.Requirements;
 using QuickApp.Server.Configuration;
@@ -195,6 +196,11 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
+builder.Services.AddScoped<IInventoryService, QuickApp.Core.Services.Shop.InventoryService>();
+builder.Services.AddHttpClient<IInventoryServiceClient, InventoryServiceHttpClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["InventoryService:BaseUrl"] ?? "http://localhost:5004");
+});
 
 // Other Services
 builder.Services.AddScoped<IEmailSender, EmailSender>();
