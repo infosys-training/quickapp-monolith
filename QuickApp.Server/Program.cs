@@ -16,6 +16,7 @@ using QuickApp.Core.Models.Account;
 using QuickApp.Core.Services;
 using QuickApp.Core.Services.Account;
 using QuickApp.Core.Services.Shop;
+using QuickApp.Core.Services.Shop.HttpClients;
 using QuickApp.Server.Authorization;
 using QuickApp.Server.Authorization.Requirements;
 using QuickApp.Server.Configuration;
@@ -193,6 +194,11 @@ builder.Services.Configure<AppSettings>(builder.Configuration);
 builder.Services.AddScoped<IUserAccountService, UserAccountService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddHttpClient<IProductServiceClient, ProductServiceHttpClient>(client =>
+{
+    var baseUrl = builder.Configuration["ProductService:BaseUrl"] ?? "http://localhost:5001";
+    client.BaseAddress = new Uri(baseUrl);
+});
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 
