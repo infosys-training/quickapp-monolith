@@ -1,8 +1,6 @@
-using QuickApp.Core.Services.Shop.HttpClients;
-
-namespace QuickApp.Core.Services.Shop
+namespace QuickApp.Core.Services.Shop.HttpClients
 {
-    public interface IOrdersService
+    public interface IOrderServiceClient
     {
         Task<IEnumerable<OrderDto>> GetAllOrdersAsync();
         Task<OrderDto?> GetOrderByIdAsync(int id);
