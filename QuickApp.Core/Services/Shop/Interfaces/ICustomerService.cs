@@ -1,16 +1,16 @@
-﻿// ---------------------------------------
+// ---------------------------------------
 // Email: quickapp@ebenmonney.com
 // Templates: www.ebenmonney.com/templates
 // (c) 2024 www.ebenmonney.com/mit-license
 // ---------------------------------------
 
-using QuickApp.Core.Models.Shop;
+using QuickApp.Core.Services.Shop.HttpClients;
 
 namespace QuickApp.Core.Services.Shop
 {
     public interface ICustomerService
     {
-        IEnumerable<Customer> GetTopActiveCustomers(int count);
-        IEnumerable<Customer> GetAllCustomersData();
+        Task<IEnumerable<CustomerServiceDto>> GetAllCustomersDataAsync();
+        Task<CustomerServiceDto?> GetCustomerByIdAsync(int id);
     }
 }
