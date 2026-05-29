@@ -1,24 +1,23 @@
-﻿// ---------------------------------------
+// ---------------------------------------
 // Email: quickapp@ebenmonney.com
 // Templates: www.ebenmonney.com/templates
 // (c) 2024 www.ebenmonney.com/mit-license
 // ---------------------------------------
 
-using Microsoft.EntityFrameworkCore;
-using QuickApp.Core.Infrastructure;
-using QuickApp.Core.Models.Shop;
+using QuickApp.Core.Services.Shop.HttpClients;
 
 namespace QuickApp.Core.Services.Shop
 {
-    public class CustomerService(ApplicationDbContext dbContext) : ICustomerService
+    public class CustomerService(ICustomerServiceClient customerServiceClient) : ICustomerService
     {
-        public IEnumerable<Customer> GetTopActiveCustomers(int count) => throw new NotImplementedException();
+        public async Task<IEnumerable<CustomerServiceDto>> GetAllCustomersDataAsync()
+        {
+            return await customerServiceClient.GetAllCustomersAsync();
+        }
 
-        public IEnumerable<Customer> GetAllCustomersData() => dbContext.Customers
-                .Include(c => c.Orders).ThenInclude(o => o.OrderDetails).ThenInclude(d => d.Product)
-                .Include(c => c.Orders).ThenInclude(o => o.Cashier)
-                .AsSingleQuery()
-                .OrderBy(c => c.Name)
-                .ToList();
+        public async Task<CustomerServiceDto?> GetCustomerByIdAsync(int id)
+        {
+            return await customerServiceClient.GetCustomerByIdAsync(id);
+        }
     }
 }
