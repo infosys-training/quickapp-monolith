@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  quickapp-monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5225:5225"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5225
+      - OrderService__BaseUrl=http://order-service:5003
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/quickapp.db
+    volumes:
+      - monolith_data:/app/data
+    depends_on:
+      order-service:
+        condition: service_started
+
+  order-service:
+    build:
+      context: ../quickapp-microservices/src
+      dockerfile: Services/Order/Order.API/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5003
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/orders.db
+    volumes:
+      - order_data:/app/data
+
+volumes:
+  monolith_data:
+  order_data:
