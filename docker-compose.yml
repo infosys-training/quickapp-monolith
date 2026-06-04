@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  order-service:
+    build:
+      context: ../quickapp-microservices/src
+      dockerfile: Services/Order/Order.API/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Data Source=/data/order.db
+    volumes:
+      - order_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5003/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5225:5225"
+    depends_on:
+      order-service:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5225
+      - OrderService__BaseUrl=http://order-service:5003
+      - ConnectionStrings__DefaultConnection=Data Source=/data/quickapp.db
+    volumes:
+      - monolith_data:/data
+
+volumes:
+  order_data:
+  monolith_data:
