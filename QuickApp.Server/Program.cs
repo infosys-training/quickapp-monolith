@@ -194,7 +194,11 @@ builder.Services.AddScoped<IUserAccountService, UserAccountService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrdersService, OrdersService>();
+builder.Services.AddHttpClient<IOrdersService, OrdersService>(client =>
+{
+    var orderServiceUrl = builder.Configuration["OrderService:BaseUrl"] ?? "http://localhost:5003";
+    client.BaseAddress = new Uri(orderServiceUrl);
+});
 
 // Other Services
 builder.Services.AddScoped<IEmailSender, EmailSender>();
