@@ -1,7 +1,7 @@
 @QuickApp.Server_HostAddress = https://localhost:7085
 @QuickApp.Client_HostAddress = https://localhost:4200
-@username = admin
-@password = tempP@ss123
+@username = {{$dotenv QUICKAPP_USERNAME}}
+@password = {{$dotenv QUICKAPP_PASSWORD}}
 
 #### This file enables you to test the APIs of QuickApp.
 #### You can also test the APIs with Swagger by appending "/swagger"" to the home url or by using postman

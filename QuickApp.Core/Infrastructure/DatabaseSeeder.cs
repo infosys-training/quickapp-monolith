@@ -5,6 +5,8 @@
 // ---------------------------------------
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QuickApp.Core.Models;
 using QuickApp.Core.Models.Account;
@@ -14,7 +16,8 @@ using QuickApp.Core.Services.Account;
 namespace QuickApp.Core.Infrastructure
 {
     public class DatabaseSeeder(ApplicationDbContext dbContext, ILogger<DatabaseSeeder> logger,
-        IUserAccountService userAccountService, IUserRoleService userRoleService) : IDatabaseSeeder
+        IUserAccountService userAccountService, IUserRoleService userRoleService,
+        IConfiguration configuration, IHostEnvironment hostEnvironment) : IDatabaseSeeder
     {
         public async Task SeedAsync()
         {
@@ -39,15 +42,29 @@ namespace QuickApp.Core.Infrastructure
 
                 await EnsureRoleAsync(userRoleName, "Default user", []);
 
+                var adminPassword = configuration["QUICKAPP_ADMIN_PASSWORD"];
+                var userPassword = configuration["QUICKAPP_USER_PASSWORD"];
+
+                if (!hostEnvironment.IsDevelopment())
+                {
+                    if (string.IsNullOrWhiteSpace(adminPassword) || string.IsNullOrWhiteSpace(userPassword))
+                        throw new InvalidOperationException(
+                            "Seed passwords must be configured via QUICKAPP_ADMIN_PASSWORD and " +
+                            "QUICKAPP_USER_PASSWORD environment variables in non-development environments.");
+                }
+
+                adminPassword ??= "tempP@ss123";
+                userPassword ??= "tempP@ss123";
+
                 await CreateUserAsync("admin",
-                                      "tempP@ss123",
+                                      adminPassword,
                                       "Inbuilt Administrator",
                                       "admin@ebenmonney.com",
                                       "+1 (123) 000-0000",
                                       [adminRoleName]);
 
                 await CreateUserAsync("user",
-                                      "tempP@ss123",
+                                      userPassword,
                                       "Inbuilt Standard User",
                                       "user@ebenmonney.com",
                                       "+1 (123) 000-0001",

@@ -159,6 +159,9 @@ export class AuthService {
     return user;
   }
 
+  // WARNING: Tokens are stored in localStorage, which is vulnerable to XSS attacks.
+  // Migrating to a BFF (Backend-For-Frontend) pattern with HTTP-only cookies is recommended.
+  // Ensure CSP headers (V13) are in place to mitigate XSS vectors. Track as a separate work item.
   private saveUserDetails(user: User, permissions: PermissionValues[], accessToken: string, refreshToken: string, expiresIn: Date, rememberMe: boolean) {
     if (rememberMe) {
       this.localStorage.savePermanentData(accessToken, DBkeys.ACCESS_TOKEN);

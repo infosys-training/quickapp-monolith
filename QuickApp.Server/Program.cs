@@ -21,8 +21,10 @@ using QuickApp.Server.Authorization.Requirements;
 using QuickApp.Server.Configuration;
 using QuickApp.Server.Services;
 using QuickApp.Server.Services.Email;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.RateLimiting;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,17 +54,16 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.User.RequireUniqueEmail = true;
 
     // Password settings
-    /*
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
-    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireNonAlphanumeric = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = false;
+    options.Password.RequireLowercase = true;
 
     // Lockout settings
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
-    options.Lockout.MaxFailedAccessAttempts = 10;
-    */
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
 
     // Configure Identity to use the same JWT claims as OpenIddict
     options.ClaimsIdentity.UserNameClaimType = Claims.Name;
@@ -93,8 +94,12 @@ builder.Services.AddOpenIddict()
     {
         options.SetTokenEndpointUris("connect/token");
 
+        // TODO: Migrate from Password flow (ROPC) to Authorization Code + PKCE per OAuth 2.1
         options.AllowPasswordFlow()
                .AllowRefreshTokenFlow();
+
+        options.SetAccessTokenLifetime(TimeSpan.FromMinutes(30));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
 
         options.RegisterScopes(
             Scopes.Profile,
@@ -115,10 +120,9 @@ builder.Services.AddOpenIddict()
 
             if (string.IsNullOrWhiteSpace(oidcCertFileName))
             {
-                // You must configure persisted keys for Encryption and Signing.
-                // See https://documentation.openiddict.com/configuration/encryption-and-signing-credentials.html
-                options.AddEphemeralEncryptionKey()
-                       .AddEphemeralSigningKey();
+                throw new InvalidOperationException(
+                    "OIDC certificates must be configured for production. " +
+                    "Set OIDC:Certificates:Path and OIDC:Certificates:Password in configuration.");
             }
             else
             {
@@ -160,7 +164,17 @@ builder.Services.AddAuthorizationBuilder()
         policy => policy.Requirements.Add(new AssignRolesAuthorizationRequirement()));
 
 // Add cors
-builder.Services.AddCors();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var origins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+        policy.WithOrigins(origins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 builder.Services.AddControllers();
 
@@ -206,6 +220,17 @@ builder.Services.AddSingleton<IAuthorizationHandler, ManageUserAuthorizationHand
 builder.Services.AddSingleton<IAuthorizationHandler, ViewRoleAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, AssignRolesAuthorizationHandler>();
 
+// Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("token", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+    });
+    options.RejectionStatusCode = 429;
+});
+
 // DB Creation and Seeding
 builder.Services.AddTransient<IDatabaseSeeder, DatabaseSeeder>();
 
@@ -243,10 +268,32 @@ else
 
 app.UseHttpsRedirection();
 
-app.UseCors(builder => builder
-    .AllowAnyOrigin()
-    .AllowAnyHeader()
-    .AllowAnyMethod());
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });
+        });
+    });
+}
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none';");
+    await next();
+});
+
+app.UseCors();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

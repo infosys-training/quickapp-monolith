@@ -5,6 +5,7 @@
 // ---------------------------------------
 
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuickApp.Core.Services;
 using QuickApp.Core.Services.Shop;
@@ -14,19 +15,16 @@ using QuickApp.Server.ViewModels.Shop;
 namespace QuickApp.Server.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class CustomerController : ControllerBase
+    [Authorize]
+    public class CustomerController : BaseApiController
     {
-        private readonly IMapper _mapper;
-        private readonly ILogger _logger;
         private readonly IEmailSender _emailSender;
         private readonly ICustomerService _customerService;
 
         public CustomerController(IMapper mapper, ILogger<CustomerController> logger, IEmailSender emailSender,
             ICustomerService customerService)
+            : base(logger, mapper)
         {
-            _mapper = mapper;
-            _logger = logger;
             _emailSender = emailSender;
             _customerService = customerService;
         }
@@ -38,6 +36,7 @@ namespace QuickApp.Server.Controllers
             return Ok(_mapper.Map<IEnumerable<CustomerVM>>(allCustomers));
         }
 
+#if DEBUG
         [HttpGet("throw")]
         public IEnumerable<CustomerVM> Throw()
         {
@@ -60,6 +59,7 @@ namespace QuickApp.Server.Controllers
 
             return $"Error: {errorMsg}";
         }
+#endif
 
         [HttpGet("{id}")]
         public string Get(int id)
