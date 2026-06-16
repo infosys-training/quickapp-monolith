@@ -8,6 +8,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using QuickApp.Core.Models.Account;
@@ -21,17 +22,21 @@ namespace QuickApp.Server.Controllers
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<AuthorizationController> _logger;
 
         public AuthorizationController(SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ILogger<AuthorizationController> logger)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _logger = logger;
         }
 
         [HttpPost("~/connect/token")]
         [Produces("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
+        [EnableRateLimiting("token")]
         public async Task<IActionResult> Exchange()
         {
             var request = HttpContext.GetOpenIddictServerRequest()
@@ -46,24 +51,38 @@ namespace QuickApp.Server.Controllers
                     ?? await _userManager.FindByEmailAsync(request.Username);
 
                 if (user == null)
+                {
+                    _logger.LogWarning("Failed login attempt for {Username}", request.Username);
                     return GetForbidResult("Please check that your username and password is correct.");
+                }
 
                 if (!user.IsEnabled)
+                {
+                    _logger.LogWarning("Disabled account login attempt for {Username}", request.Username);
                     return GetForbidResult("The specified user account is disabled.");
+                }
 
                 var result =
                     await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
 
                 if (result.IsLockedOut)
+                {
+                    _logger.LogWarning("Account locked out for {Username}", request.Username);
                     return GetForbidResult("The specified user account has been suspended.");
+                }
 
                 if (result.IsNotAllowed)
                     return GetForbidResult("The specified user is not allowed to sign in.");
 
                 if (!result.Succeeded)
+                {
+                    _logger.LogWarning("Failed login attempt for {Username}", request.Username);
                     return GetForbidResult("Please check that your username and password is correct.");
+                }
 
                 var principal = await CreateClaimsPrincipalAsync(user, request.GetScopes());
+
+                _logger.LogInformation("User {Username} logged in successfully", request.Username);
 
                 return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }

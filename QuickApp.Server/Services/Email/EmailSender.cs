@@ -66,13 +66,10 @@ namespace QuickApp.Server.Services.Email
             {
                 using (var client = new SmtpClient())
                 {
-                    if (!config.UseSSL)
-                    {
-                        client.ServerCertificateValidationCallback =
-                            (sender2, certificate, chain, sslPolicyErrors) => true;
-                    }
-
-                    await client.ConnectAsync(config.Host, config.Port, config.UseSSL).ConfigureAwait(false);
+                    await client.ConnectAsync(config.Host, config.Port,
+                        config.UseSSL ? MailKit.Security.SecureSocketOptions.SslOnConnect
+                                      : MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable)
+                        .ConfigureAwait(false);
                     client.AuthenticationMechanisms.Remove("XOAUTH2");
 
                     if (!string.IsNullOrWhiteSpace(config.Username))
