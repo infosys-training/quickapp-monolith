@@ -8,6 +8,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using QuickApp.Core.Models.Account;
@@ -35,6 +36,7 @@ namespace QuickApp.Server.Controllers
         [HttpPost("~/connect/token")]
         [Produces("application/json")]
         [ApiExplorerSettings(IgnoreApi = true)]
+        [EnableRateLimiting("token")]
         public async Task<IActionResult> Exchange()
         {
             var request = HttpContext.GetOpenIddictServerRequest()
