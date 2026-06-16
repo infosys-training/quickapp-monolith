@@ -206,19 +206,19 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
    - Backend: `F5` or `dotnet run` from `QuickApp.Server`
    - Frontend: `npm start` from `quickapp.client`
 
-### Default Login Credentials
+### Required Environment Variables
 
-**Administrator Account:**
-- Username: `admin`
-- Email: `admin@ebenmonney.com`
-- Password: `tempP@ss123`
+The following environment variables must be configured for deployment:
 
-**Standard Account:**
-- Username: `user`
-- Email: `user@ebenmonney.com`
-- Password: `tempP@ss123`
+| Variable | Description |
+|----------|-------------|
+| `QUICKAPP_ADMIN_PASSWORD` | Initial admin password used during database seeding. Must meet password complexity requirements. |
+| `QUICKAPP_SMTP_PASSWORD` | SMTP server password for outbound email delivery. |
+| `OIDC:Certificates:Path` | File path to the PKCS#12 (.pfx) certificate for OIDC token signing and encryption. **Required in Production.** |
+| `OIDC:Certificates:Password` | Password for the OIDC signing certificate file. |
+| `AllowedOrigins` | JSON array of allowed CORS origins (e.g., `["https://app.example.com"]`). |
 
-> **Note:** Change these passwords immediately in production!
+> **Note:** The application will fail to start in Production if OIDC certificates are not configured. See [SECURITY.md](SECURITY.md) for security policies.
 
 ---
 
